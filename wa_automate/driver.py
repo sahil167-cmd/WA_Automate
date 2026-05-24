@@ -10,10 +10,13 @@ def setup_browser(config: Config):
     # Configure Headless Mode
     if config.get("browser", "headless", default=False):
         options.add_argument("--headless=new")
-        logger.info("Running browser in headless mode.")
+        # Headless Chrome requires a standard user agent to bypass WhatsApp Web blocks
+        options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
+        options.add_argument("--window-size=1920,1080")
+        logger.info("Running browser in headless mode with user-agent spoofing.")
         
     # Configure Start Maximized
-    if config.get("browser", "maximize", default=True):
+    if config.get("browser", "maximize", default=True) and not config.get("browser", "headless", default=False):
         options.add_argument("--start-maximized")
         
     # Configure Session Persistence
