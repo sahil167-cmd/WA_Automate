@@ -92,59 +92,77 @@ def run_campaign(cli_args=None):
         logger.info("=================================")
 
     # 5. Loop Through Contacts
-    for index, contact in enumerate(contacts, 1):
+    index = 0
+    while index < len(contacts):
+        contact = contacts[index]
+        row_num = index + 1
         name = contact.get("Name") or contact.get("name") or "Recipient"
         raw_phone = contact.get("Phone") or contact.get("phone") or ""
         
-        phone = clean_phone_number(raw_phone, default_country_code=country_code)
-        if not phone:
-            logger.warning(f"⏩ Row {index}: Skipped due to invalid/missing phone number: {raw_phone}")
-            reporter.log_result(index, name, raw_phone, "SKIPPED", "Invalid or missing phone number.")
-            continue
-            
-        contact_ctx = contact.copy()
-        if "Name" not in contact_ctx and "name" not in contact_ctx:
-            contact_ctx["Name"] = name
-            
-        message = format_message(default_template, contact_ctx)
-        
-        if dry_run:
-            logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Message: \"{message}\"")
-            if attachment_path:
-                logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Would send attachment: {attachment_path}")
-            reporter.log_result(index, name, phone, "DRY_RUN", f"Mocked message send. Template: {message}")
-            continue
-            
-        logger.info(f"Processing row {index}: {name} ({phone})")
-        
-        # Send message via Selenium
         try:
-            encoded_message = urllib.parse.quote(message)
-            url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_message}"
-            logger.info(f"Opening conversation with {name}...")
-            driver.get(url)
+            phone = clean_phone_number(raw_phone, default_country_code=country_code)
+            if not phone:
+                logger.warning(f"⏩ Row {row_num}: Skipped due to invalid/missing phone number: {raw_phone}")
+                reporter.log_result(row_num, name, raw_phone, "SKIPPED", "Invalid or missing phone number.")
+                index += 1
+                continue
+                
+            contact_ctx = contact.copy()
+            if "Name" not in contact_ctx and "name" not in contact_ctx:
+                contact_ctx["Name"] = name
+                
+            message = format_message(default_template, contact_ctx)
             
-            wait = WebDriverWait(driver, 30)
-            input_box = wait.until(
-                EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
-            )
+            if dry_run:
+                logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Message: \"{message}\"")
+                if attachment_path:
+                    logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Would send attachment: {attachment_path}")
+                reporter.log_result(row_num, name, phone, "DRY_RUN", f"Mocked message send. Template: {message}")
+                index += 1
+                continue
+                
+            logger.info(f"Processing row {row_num}: {name} ({phone})")
             
-            time.sleep(1.5)
-            input_box.send_keys(Keys.ENTER)
-            logger.info(f"✅ Message sent to {name} ({phone})")
+            # Send message via Selenium
+            try:
+                encoded_message = urllib.parse.quote(message)
+                url = f"https://web.whatsapp.com/send?phone={phone}&text={encoded_message}"
+                logger.info(f"Opening conversation with {name}...")
+                driver.get(url)
+                
+                wait = WebDriverWait(driver, 30)
+                input_box = wait.until(
+                    EC.presence_of_element_located((By.XPATH, '//div[@contenteditable="true"][@data-tab="10"]'))
+                )
+                
+                time.sleep(1.5)
+                input_box.send_keys(Keys.ENTER)
+                logger.info(f"✅ Message sent to {name} ({phone})")
+                
+                if attachment_path:
+                    time.sleep(2.0)
+                    send_attachment(driver, attachment_path)
+                
+                reporter.log_result(row_num, name, phone, "SUCCESS")
+                
+            except Exception as e:
+                logger.error(f"❌ Failed to send to {name} ({phone}): {e}")
+                reporter.log_result(row_num, name, phone, "FAILED", str(e))
+                
+            if row_num < len(contacts):
+                rate_limiter.wait_between_messages()
             
-            if attachment_path:
-                time.sleep(2.0)
-                send_attachment(driver, attachment_path)
-            
-            reporter.log_result(index, name, phone, "SUCCESS")
-            
-        except Exception as e:
-            logger.error(f"❌ Failed to send to {name} ({phone}): {e}")
-            reporter.log_result(index, name, phone, "FAILED", str(e))
-            
-        if index < len(contacts):
-            rate_limiter.wait_between_messages()
+            index += 1
+
+        except KeyboardInterrupt:
+            logger.warning("\n⏸️ Campaign paused by user interrupt (Ctrl+C).")
+            choice = input("Press [Enter] to resume, or type 'exit' to save report and terminate: ").strip().lower()
+            if choice == 'exit':
+                logger.info("Terminating campaign. Saving report...")
+                break
+            else:
+                logger.info("Resuming campaign...")
+                continue
 
     if driver:
         driver.quit()
