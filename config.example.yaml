@@ -16,6 +16,9 @@ delays:
   # Random delay bounds (seconds) between messages to prevent bans
   min_delay: 15
   max_delay: 45
+  # Force a longer cooldown pause after a batch of messages
+  batch_size: 10
+  batch_cooldown: 300
 
 logging:
   level: "INFO"

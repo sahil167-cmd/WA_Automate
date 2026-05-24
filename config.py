@@ -15,7 +15,9 @@ DEFAULT_CONFIG = {
     },
     "delays": {
         "min_delay": 15,
-        "max_delay": 45
+        "max_delay": 45,
+        "batch_size": 10,
+        "batch_cooldown": 300
     },
     "logging": {
         "level": "INFO",
