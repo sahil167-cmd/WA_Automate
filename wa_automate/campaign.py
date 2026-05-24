@@ -59,7 +59,32 @@ def run_campaign(cli_args=None):
                 driver.quit()
             return
     else:
-        logger.info("ℹ️ Running in DRY-RUN mode. No messages will be sent.")
+        logger.info("ℹ️ Running in DRY-RUN mode. Validating campaign details...")
+        valid_count = 0
+        invalid_count = 0
+        for contact in contacts:
+            raw_phone = contact.get("Phone") or contact.get("phone") or ""
+            phone = clean_phone_number(raw_phone, default_country_code=country_code)
+            if phone:
+                valid_count += 1
+            else:
+                invalid_count += 1
+        
+        # Calculate estimate duration
+        avg_delay = (rate_limiter.min_delay + rate_limiter.max_delay) / 2
+        total_delays = avg_delay * max(0, valid_count - 1)
+        # Add batch cooldowns
+        batches = max(0, valid_count - 1) // rate_limiter.batch_size
+        total_cooldowns = batches * rate_limiter.batch_cooldown
+        est_seconds = total_delays + total_cooldowns
+        est_minutes = est_seconds / 60
+        
+        logger.info("=== DRY-RUN CAMPAIGN SUMMARY ===")
+        logger.info(f"Loaded Contacts: {len(contacts)}")
+        logger.info(f"Valid Phone Numbers: {valid_count}")
+        logger.info(f"Invalid Phone Numbers: {invalid_count}")
+        logger.info(f"Estimated Campaign Duration: {est_minutes:.1f} minutes")
+        logger.info("=================================")
 
     # 5. Loop Through Contacts
     for index, contact in enumerate(contacts, 1):
@@ -77,12 +102,12 @@ def run_campaign(cli_args=None):
             
         message = format_message(default_template, contact_ctx)
         
-        logger.info(f"Processing row {index}: {name} ({phone})")
-        
         if dry_run:
-            logger.info(f"[DRY-RUN] Would send to {name} ({phone}): \"{message}\"")
+            logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Message: \"{message}\"")
             continue
             
+        logger.info(f"Processing row {index}: {name} ({phone})")
+        
         # Send message via Selenium
         try:
             encoded_message = urllib.parse.quote(message)
