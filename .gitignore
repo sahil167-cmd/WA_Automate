@@ -21,3 +21,6 @@ __pycache__/
 venv/
 .venv/
 env/
+
+# Ignore campaign execution reports
+reports/

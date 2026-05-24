@@ -12,6 +12,7 @@ from .templater import format_message
 from .validator import clean_phone_number
 from .scheduler import RateLimiter
 from .driver import setup_browser, send_attachment
+from .reporter import CampaignReporter
 
 def run_campaign(cli_args=None):
     # 1. Load Settings
@@ -47,6 +48,7 @@ def run_campaign(cli_args=None):
         
     # 3. Setup Scheduler/RateLimiter
     rate_limiter = RateLimiter(config)
+    reporter = CampaignReporter()
     
     driver = None
     if not dry_run:
@@ -97,6 +99,7 @@ def run_campaign(cli_args=None):
         phone = clean_phone_number(raw_phone, default_country_code=country_code)
         if not phone:
             logger.warning(f"⏩ Row {index}: Skipped due to invalid/missing phone number: {raw_phone}")
+            reporter.log_result(index, name, raw_phone, "SKIPPED", "Invalid or missing phone number.")
             continue
             
         contact_ctx = contact.copy()
@@ -109,6 +112,7 @@ def run_campaign(cli_args=None):
             logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Message: \"{message}\"")
             if attachment_path:
                 logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Would send attachment: {attachment_path}")
+            reporter.log_result(index, name, phone, "DRY_RUN", f"Mocked message send. Template: {message}")
             continue
             
         logger.info(f"Processing row {index}: {name} ({phone})")
@@ -133,12 +137,18 @@ def run_campaign(cli_args=None):
                 time.sleep(2.0)
                 send_attachment(driver, attachment_path)
             
+            reporter.log_result(index, name, phone, "SUCCESS")
+            
         except Exception as e:
             logger.error(f"❌ Failed to send to {name} ({phone}): {e}")
+            reporter.log_result(index, name, phone, "FAILED", str(e))
             
         if index < len(contacts):
             rate_limiter.wait_between_messages()
 
     if driver:
         driver.quit()
+    
+    # Generate CSV Report
+    reporter.generate_report()
     logger.info("🎉 Campaign completed successfully.")
