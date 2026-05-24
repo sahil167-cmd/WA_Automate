@@ -1,4 +1,5 @@
 import urllib.parse
+import argparse
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -39,9 +40,21 @@ def setup_browser(config: Config):
     
     return driver
 
-def run_campaign():
+def run_campaign(cli_args=None):
     # 1. Load Settings
-    config = Config()
+    config_path = cli_args.config if cli_args and cli_args.config else "config.yaml"
+    config = Config(config_path)
+    
+    # Apply CLI overrides
+    if cli_args:
+        if cli_args.input:
+            config.settings["campaign"]["input_file"] = cli_args.input
+        if cli_args.message:
+            config.settings["campaign"]["default_message"] = cli_args.message
+        if cli_args.dry_run is not None:
+            config.settings["campaign"]["dry_run"] = cli_args.dry_run
+        if cli_args.headless is not None:
+            config.settings["browser"]["headless"] = cli_args.headless
     
     input_file = config.get("campaign", "input_file")
     default_template = config.get("campaign", "default_message")
@@ -134,4 +147,12 @@ def run_campaign():
     logger.info("🎉 Campaign completed successfully.")
 
 if __name__ == "__main__":
-    run_campaign()
+    parser = argparse.ArgumentParser(description="WA_Automate: Professional WhatsApp Automation CLI tool.")
+    parser.add_argument("-i", "--input", help="Path to contacts input file (CSV/Excel).")
+    parser.add_argument("-m", "--message", help="Default message template.")
+    parser.add_argument("-c", "--config", help="Path to YAML configuration file.")
+    parser.add_argument("-d", "--dry-run", action="store_true", default=None, help="Run without sending messages.")
+    parser.add_argument("--headless", action="store_true", default=None, help="Run Chrome browser in headless mode.")
+    args = parser.parse_args()
+    
+    run_campaign(args)
