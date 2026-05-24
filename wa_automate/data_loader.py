@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-from logger import logger
+from .logger import logger
 
 def load_contacts(file_path: str) -> list:
     """

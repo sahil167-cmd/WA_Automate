@@ -1,5 +1,5 @@
 import re
-from logger import logger
+from .logger import logger
 
 def format_message(template: str, context: dict) -> str:
     """

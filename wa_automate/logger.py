@@ -1,6 +1,6 @@
 import logging
 import sys
-from config import Config
+from .config import Config
 
 def setup_logger(config: Config = None):
     if config is None:

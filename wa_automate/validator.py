@@ -1,5 +1,5 @@
 import re
-from logger import logger
+from .logger import logger
 
 def clean_phone_number(phone: str, default_country_code: str = "91") -> str:
     """

@@ -1,7 +1,7 @@
 import time
 import random
-from logger import logger
-from config import Config
+from .logger import logger
+from .config import Config
 
 class RateLimiter:
     def __init__(self, config: Config = None):
