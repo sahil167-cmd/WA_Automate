@@ -16,6 +16,14 @@ def setup_browser(config: Config):
     if config.get("browser", "maximize", default=True):
         options.add_argument("--start-maximized")
         
+    # Configure Session Persistence
+    user_data_dir = config.get("browser", "user_data_dir")
+    if user_data_dir:
+        import os
+        abs_data_dir = os.path.abspath(user_data_dir)
+        options.add_argument(f"user-data-dir={abs_data_dir}")
+        logger.info(f"Using Chrome user profile for session persistence: {abs_data_dir}")
+        
     # Add options to avoid bot detection fingerprints
     options.add_argument("--disable-blink-features=AutomationControlled")
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
