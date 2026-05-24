@@ -5,6 +5,8 @@ campaign:
   input_file: "contacts1.xlsx"
   default_message: "Hello {Name}, we are offering job opportunities under a CSR initiative. Reply if interested."
   dry_run: false
+  # Default country code (e.g. 91 for India) to prepend to 10-digit phone numbers
+  default_country_code: "91"
 
 browser:
   headless: false

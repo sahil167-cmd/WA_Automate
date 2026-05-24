@@ -5,7 +5,8 @@ DEFAULT_CONFIG = {
     "campaign": {
         "input_file": "contacts1.xlsx",
         "default_message": "Hello {Name}, we are offering job opportunities under a CSR initiative. Reply if interested.",
-        "dry_run": False
+        "dry_run": False,
+        "default_country_code": "91"
     },
     "browser": {
         "headless": False,
