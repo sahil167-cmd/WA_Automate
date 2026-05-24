@@ -8,6 +8,7 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--config", help="Path to YAML configuration file.")
     parser.add_argument("-d", "--dry-run", action="store_true", default=None, help="Run without sending messages.")
     parser.add_argument("--headless", action="store_true", default=None, help="Run Chrome browser in headless mode.")
+    parser.add_argument("-a", "--attachment", help="Path to attachment file to send.")
     args = parser.parse_args()
     
     run_campaign(args)

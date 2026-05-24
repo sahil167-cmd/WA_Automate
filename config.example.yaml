@@ -7,6 +7,8 @@ campaign:
   dry_run: false
   # Default country code (e.g. 91 for India) to prepend to 10-digit phone numbers
   default_country_code: "91"
+  # Optional path to an attachment file (e.g. image/document) to send with each message
+  attachment: ""
 
 browser:
   headless: false

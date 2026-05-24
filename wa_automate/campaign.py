@@ -11,7 +11,7 @@ from .data_loader import load_contacts
 from .templater import format_message
 from .validator import clean_phone_number
 from .scheduler import RateLimiter
-from .driver import setup_browser
+from .driver import setup_browser, send_attachment
 
 def run_campaign(cli_args=None):
     # 1. Load Settings
@@ -28,11 +28,14 @@ def run_campaign(cli_args=None):
             config.settings["campaign"]["dry_run"] = cli_args.dry_run
         if cli_args.headless is not None:
             config.settings["browser"]["headless"] = cli_args.headless
+        if getattr(cli_args, "attachment", None):
+            config.settings["campaign"]["attachment"] = cli_args.attachment
     
     input_file = config.get("campaign", "input_file")
     default_template = config.get("campaign", "default_message")
     country_code = config.get("campaign", "default_country_code")
     dry_run = config.get("campaign", "dry_run", default=False)
+    attachment_path = config.get("campaign", "attachment")
     
     logger.info(f"🚀 Starting WhatsApp Automation campaign using {input_file}...")
     
@@ -104,6 +107,8 @@ def run_campaign(cli_args=None):
         
         if dry_run:
             logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Message: \"{message}\"")
+            if attachment_path:
+                logger.info(f"[DRY-RUN] Success for {name} ({phone}) → Would send attachment: {attachment_path}")
             continue
             
         logger.info(f"Processing row {index}: {name} ({phone})")
@@ -123,6 +128,10 @@ def run_campaign(cli_args=None):
             time.sleep(1.5)
             input_box.send_keys(Keys.ENTER)
             logger.info(f"✅ Message sent to {name} ({phone})")
+            
+            if attachment_path:
+                time.sleep(2.0)
+                send_attachment(driver, attachment_path)
             
         except Exception as e:
             logger.error(f"❌ Failed to send to {name} ({phone}): {e}")

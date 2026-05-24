@@ -36,3 +36,40 @@ def setup_browser(config: Config):
     driver.set_page_load_timeout(timeout)
     
     return driver
+
+def send_attachment(driver, file_path):
+    """
+    Uploads and sends an attachment file (image, video, document) via WhatsApp Web.
+    Returns True if successful, False otherwise.
+    """
+    import os
+    import time
+    from selenium.webdriver.support.ui import WebDriverWait
+    from selenium.webdriver.support import expected_conditions as EC
+    from selenium.webdriver.common.by import By
+
+    if not os.path.exists(file_path):
+        logger.error(f"Attachment file not found: {file_path}")
+        return False
+        
+    abs_path = os.path.abspath(file_path)
+    logger.info(f"Uploading attachment: {abs_path}")
+    try:
+        wait = WebDriverWait(driver, 20)
+        file_input = wait.until(
+            EC.presence_of_element_located((By.XPATH, '//input[@type="file"]'))
+        )
+        file_input.send_keys(abs_path)
+        
+        # Wait for the send button on the preview screen to appear and click it
+        send_btn = wait.until(
+            EC.element_to_be_clickable((By.XPATH, '//span[@data-icon="send"]/parent::button | //div[@aria-label="Send"][@role="button"]'))
+        )
+        
+        time.sleep(2.0)  # Allow time for upload preview loading
+        send_btn.click()
+        logger.info(f"✅ Attachment sent: {file_path}")
+        return True
+    except Exception as e:
+        logger.error(f"❌ Failed to send attachment: {e}")
+        return False
