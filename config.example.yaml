@@ -1,0 +1,23 @@
+# WA_Automate Configuration Example
+# Copy this file to config.yaml and customize your settings.
+
+campaign:
+  input_file: "contacts1.xlsx"
+  default_message: "Hello {Name}, we are offering job opportunities under a CSR initiative. Reply if interested."
+  dry_run: false
+
+browser:
+  headless: false
+  maximize: true
+  page_load_timeout: 30
+  user_data_dir: "chrome-data"
+
+delays:
+  # Random delay bounds (seconds) between messages to prevent bans
+  min_delay: 15
+  max_delay: 45
+
+logging:
+  level: "INFO"
+  log_file: "wa_automate.log"
+  log_to_console: true
