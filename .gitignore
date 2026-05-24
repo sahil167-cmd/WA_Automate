@@ -10,6 +10,8 @@ config.yaml
 # Ignore local contact datasets (use templates/ instead)
 contacts*.xlsx
 contacts*.csv
+!templates/contacts_template.xlsx
+!templates/contacts_template.csv
 
 # Ignore editor settings
 .vscode/
