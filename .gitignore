@@ -1,0 +1,23 @@
+# Ignore Chrome binaries and data
+chrome-win64/
+chrome-data/
+chrome.exe
+
+# Ignore local config files
+config.yaml
+*.log
+
+# Ignore local contact datasets (use templates/ instead)
+contacts*.xlsx
+contacts*.csv
+
+# Ignore editor settings
+.vscode/
+.idea/
+__pycache__/
+*.pyc
+
+# Ignore python virtual environments
+venv/
+.venv/
+env/
