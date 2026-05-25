@@ -101,9 +101,7 @@ python automate.py --headless
 
 ---
 
-## Campaign Safety & Precautions ⚠️
 
-> [!WARNING]
 > WhatsApp strictly monitors automated sending. Exposing accounts to spam patterns will result in **permanent bans**.
 
 To safeguard your WhatsApp account from being flagged or banned:
