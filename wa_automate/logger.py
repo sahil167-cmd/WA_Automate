@@ -1,15 +1,26 @@
 import logging
 import sys
+from logging.handlers import RotatingFileHandler
 from .config import Config
 
-def setup_logger(config: Config = None):
+def setup_logger(config: Config = None) -> logging.Logger:
     if config is None:
-        config = Config()
+        try:
+            config = Config()
+        except Exception:
+            # Fallback configuration in case Config fails to instantiate
+            config = None
 
-    log_level_str = config.get("logging", "level", default="INFO").upper()
+    if config:
+        log_level_str = config.get("logging", "level", default="INFO").upper()
+        log_file = config.get("logging", "log_file", default="wa_automate.log")
+        log_to_console = config.get("logging", "log_to_console", default=True)
+    else:
+        log_level_str = "INFO"
+        log_file = "wa_automate.log"
+        log_to_console = True
+
     log_level = getattr(logging, log_level_str, logging.INFO)
-    log_file = config.get("logging", "log_file", default="wa_automate.log")
-    log_to_console = config.get("logging", "log_to_console", default=True)
 
     logger = logging.getLogger("WA_Automate")
     logger.setLevel(log_level)
@@ -23,13 +34,18 @@ def setup_logger(config: Config = None):
         datefmt="%Y-%m-%d %H:%M:%S"
     )
 
-    # File Handler
+    # Rotating File Handler (Max 5MB file size, keeping up to 3 backups)
     try:
-        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler = RotatingFileHandler(
+            log_file, 
+            maxBytes=5 * 1024 * 1024, 
+            backupCount=3, 
+            encoding="utf-8"
+        )
         file_handler.setFormatter(formatter)
         logger.addHandler(file_handler)
     except Exception as e:
-        print(f"Warning: Failed to set up file logger: {e}")
+        print(f"Warning: Failed to set up rotating file logger: {e}")
 
     # Console Handler
     if log_to_console:
