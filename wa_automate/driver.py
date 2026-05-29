@@ -1,8 +1,18 @@
+import os
+import time
+from typing import Any
 from selenium import webdriver
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
 from .logger import logger
 from .config import Config
+from .exceptions import BrowserDriverError, ValidationError
 
-def setup_browser(config: Config):
+MAX_ATTACHMENT_SIZE_MB = 100  # Default max limit of 100MB for documents on WhatsApp Web
+
+
+def setup_browser(config: Config) -> webdriver.Chrome:
     """Initialize and configure Chrome WebDriver based on configuration."""
     logger.info("Initializing Chrome WebDriver...")
     options = webdriver.ChromeOptions()
@@ -22,7 +32,6 @@ def setup_browser(config: Config):
     # Configure Session Persistence
     user_data_dir = config.get("browser", "user_data_dir")
     if user_data_dir:
-        import os
         abs_data_dir = os.path.abspath(user_data_dir)
         options.add_argument(f"user-data-dir={abs_data_dir}")
         logger.info(f"Using Chrome user profile for session persistence: {abs_data_dir}")
@@ -32,7 +41,10 @@ def setup_browser(config: Config):
     options.add_experimental_option("excludeSwitches", ["enable-automation"])
     options.add_experimental_option("useAutomationExtension", False)
     
-    driver = webdriver.Chrome(options=options)
+    try:
+        driver = webdriver.Chrome(options=options)
+    except Exception as e:
+        raise BrowserDriverError(f"Failed to create Chrome WebDriver instance: {e}") from e
     
     # Set page load timeout
     timeout = config.get("browser", "page_load_timeout", default=30)
@@ -40,20 +52,34 @@ def setup_browser(config: Config):
     
     return driver
 
-def send_attachment(driver, file_path):
+
+def send_attachment(driver: webdriver.Chrome, file_path: str) -> bool:
     """
     Uploads and sends an attachment file (image, video, document) via WhatsApp Web.
+    Performs file existence, directory and size validation.
     Returns True if successful, False otherwise.
     """
-    import os
-    import time
-    from selenium.webdriver.support.ui import WebDriverWait
-    from selenium.webdriver.support import expected_conditions as EC
-    from selenium.webdriver.common.by import By
+    if not file_path:
+        logger.error("Attachment path is empty.")
+        return False
 
     if not os.path.exists(file_path):
         logger.error(f"Attachment file not found: {file_path}")
         return False
+
+    if os.path.isdir(file_path):
+        logger.error(f"Attachment path is a directory, not a file: {file_path}")
+        return False
+
+    # Check file size (E.g. WhatsApp limits)
+    try:
+        size_bytes = os.path.getsize(file_path)
+        size_mb = size_bytes / (1024 * 1024)
+        if size_mb > MAX_ATTACHMENT_SIZE_MB:
+            logger.error(f"Attachment size ({size_mb:.2f}MB) exceeds maximum limit of {MAX_ATTACHMENT_SIZE_MB}MB.")
+            return False
+    except Exception as e:
+        logger.warning(f"Could not verify file size for '{file_path}': {e}")
         
     abs_path = os.path.abspath(file_path)
     logger.info(f"Uploading attachment: {abs_path}")
